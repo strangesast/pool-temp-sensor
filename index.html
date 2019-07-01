@@ -11,28 +11,23 @@
 
     var button = document.querySelector('button');
     button.addEventListener('click', async function() {
-      try {
-        const serviceUuid = '0000ffe0-0000-1000-8000-00805f9b34fb';
-        const characteristicUuid = '0000ffe1-0000-1000-8000-00805f9b34fb';
-        console.log('Requesting Bluetooth Device...');
+      const serviceUuid = '0000ffe0-0000-1000-8000-00805f9b34fb';
+      const characteristicUuid = '0000ffe1-0000-1000-8000-00805f9b34fb';
+      console.log('Requesting Bluetooth Device...');
 
-        const device = await navigator.bluetooth.requestDevice({
-          filters: [{services: [serviceUuid]}],
-        })
-        console.log('Connecting to GATT Server...');
-        const server = await device.gatt.connect();
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{services: [serviceUuid]}],
+      })
+      console.log('Connecting to GATT Server...');
+      const server = await device.gatt.connect();
 
-        console.log('Getting Service...');
-        const service = await server.getPrimaryService(serviceUuid);
-        console.log('Getting Characteristic...');
-        characteristic = await service.getCharacteristic(characteristicUuid);
-        await characteristic.startNotifications();
-        console.log('> Notifications started');
-        characteristic.addEventListener('characteristicvaluechanged', handleNotifications);
-      } catch (err) {
-        console.error(err);
-        console.error(err.message);
-      }
+      console.log('Getting Service...');
+      const service = await server.getPrimaryService(serviceUuid);
+      console.log('Getting Characteristic...');
+      characteristic = await service.getCharacteristic(characteristicUuid);
+      await characteristic.startNotifications();
+      console.log('> Notifications started');
+      characteristic.addEventListener('characteristicvaluechanged', handleNotifications);
     });
     
     function convert(v) {
@@ -41,20 +36,23 @@
 
     function handleNotifications(event) {
       let value = event.target.value;
-      // Convert raw data bytes to hex values just for the sake of showing something.
-      // In the "real" world, you'd use data.getUint8, data.getUint16 or even
-      // TextDecoder to process raw data bytes.
       if (value.byteLength === 20) {
         for (let offset = 0; offset += 10; offset < 20) {
-          let i = 0;
-          // id
-          let id = '';
-          for (; i < 6; i++) {
-            id += ('00' + value.getInt8(offset + i).toString(16)).slice(-2);
+          try {
+            let i = 0;
+            // id
+            let id = '';
+            for (; i < 6; i+=2) {
+              id += ('0'.repeat(4) + value.getUint16(offset + i).toString(16)).slice(-4);
+            }
+            // temp
+            const temp = convert(value.getInt16(offset + i));
+            console.log(id, temp);
+          } catch (err) {
+            console.log('failed with', value.buffer);
+            console.error(err);
+            characteristic.removeEventListener('characteristicvaluechanged', handleNotifications);
           }
-          // temp
-          const temp = convert(value.getInt16((offset + i) / 2));
-          console.log(id, temp);
         }
       }
     }
