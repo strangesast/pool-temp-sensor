@@ -3,9 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <title></title>
+  <style>
+    svg text.temperature {
+      font-family: sans-serif;
+      font-size: 40px;
+      alignment-baseline: middle;
+      text-anchor: middle;
+    }
+  </style>
 </head>
 <body>
   <button>Get Bluetooth</button>
+  <pre></pre>
+  <svg width="1000" height="1000"></svg>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
   <script>
     var characteristic;
 
@@ -37,24 +48,68 @@
     function handleNotifications(event) {
       let value = event.target.value;
       if (value.byteLength === 20) {
-        for (let offset = 0; offset += 10; offset < 20) {
-          try {
-            let i = 0;
-            // id
-            let id = '';
-            for (; i < 6; i+=2) {
-              id += ('0'.repeat(4) + value.getUint16(offset + i).toString(16)).slice(-4);
-            }
-            // temp
-            const temp = convert(value.getInt16(offset + i));
-            console.log(id, temp);
-          } catch (err) {
-            console.log('failed with', value.buffer);
-            console.error(err);
-            characteristic.removeEventListener('characteristicvaluechanged', handleNotifications);
-          }
-        }
+        const obj = {};
+
+        const id0 = Array.from(new Uint16Array(value.buffer.slice(0, 6)), v => ('0'.repeat(4) + v.toString(16)).slice(-4)).join('');
+        const temp0 = convert(value.getInt16(6));
+        obj[id0] = temp0;
+
+        const id1 = Array.from(new Uint16Array(value.buffer.slice(10, 16)), v => ('0'.repeat(4) + v.toString(16)).slice(-4)).join('');
+        const temp1 = convert(value.getInt16(16));
+        obj[id1] = temp1;
+
+        document.querySelector('pre').textContent = JSON.stringify(obj, null, 2);
+
+        const min = 40;
+        const max = 100;
+        foreground.transition()
+            .duration(750)
+            .attrTween("d", arcTween(-2 / 3 * Math.PI + (temp0 - min) / (max - min) * 2 / 3 * tau));
+
+        text.text(temp0);
       }
+    }
+
+    var tau = 2 * Math.PI; // http://tauday.com/tau-manifesto
+    
+    // An arc function with all values bound except the endAngle. So, to compute an
+    // SVG path string for a given angle, we pass an object with an endAngle
+    // property to the `arc` function, and it will return the corresponding string.
+    var arc = d3.arc()
+        .innerRadius(180)
+        .outerRadius(240)
+        .startAngle(-Math.PI * 2 / 3);
+    
+    // Get the SVG container, and apply a transform such that the origin is the
+    // center of the canvas. This way, we don’t need to position arcs individually.
+    var svg = d3.select(document.querySelector('svg')),
+        width = +svg.attr("width"),
+        height = +svg.attr("height"),
+        g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+    
+    // Add the background arc, from 0 to 100% (tau).
+    var background = g.append("path")
+        .datum({endAngle: Math.PI * 2 / 3})
+        .style("fill", "#ddd")
+        .attr("d", arc);
+
+    var title = g.append('text').classed('title', true).text('IN');
+    var text = g.append('text').classed('temperature', true).text(72.5);
+    
+    // Add the foreground arc in orange, currently showing 12.7%.
+    var foreground = g.append("path")
+        .datum({endAngle: 0.127 * tau})
+        .style("fill", "orange")
+        .attr("d", arc);
+    
+    function arcTween(newAngle) {
+      return function(d) {
+        var interpolate = d3.interpolate(d.endAngle, newAngle);
+        return function(t) {
+          d.endAngle = interpolate(t);
+          return arc(d);
+        };
+      };
     }
   </script>
 </body>
