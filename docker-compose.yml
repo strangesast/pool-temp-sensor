@@ -1,0 +1,12 @@
+version: '3'
+services:
+  client:
+    build: client
+  api:
+    build: server-node
+    expose:
+      - "3000"
+  mongo:
+    image: "mongo"
+    expose:
+      - "27017"

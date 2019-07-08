@@ -1,3 +1,5 @@
+import * as d3 from 'd3';
+
 const SERVICE = '0000ffe0-0000-1000-8000-00805f9b34fb';
 const CHARACTERISTIC = '0000ffe1-0000-1000-8000-00805f9b34fb';
 
