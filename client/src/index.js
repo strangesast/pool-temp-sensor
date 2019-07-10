@@ -196,6 +196,13 @@ function draw(data) {
   svg.select('#below').attr('d', a4);
   svg.select('#path').attr('d', line);
 }
+const options = svg.selectAll('g.option').data([{title: 'Demo', id: 'demo'}, {title: 'Bluetooth', id: 'bluetooth'}]).enter().append('g').classed('option', true);
+options.append('rect').attr('transform', (_, i) => `translate(0,${i * 100})`).attr('stoke', 'black');
+options.append('text').attr('text-anchor', 'middle').attr('x', 100).attr('y', 50).text(d => d.title);
+options.on('click', d => {
+  console.log('option', d);
+});
+
 const rect = svg.append('g');
 rect.append('rect').attr('width', 200).attr('height', 100).attr('fill', 'blue');
 rect.node().addEventListener('click', async function main() {
