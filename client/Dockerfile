@@ -1,8 +1,8 @@
-FROM node as build
+FROM node:12 as build
 
 WORKDIR /usr/src/app
 COPY package*.json ./
-RUN npm install --production
+RUN npm install
 
 COPY . .
 RUN npm build

@@ -194,9 +194,11 @@ function draw(data) {
   svg.select('#below').attr('d', a4);
   svg.select('#path').attr('d', line);
 }
-
-svg.node().addEventListener('click', async function main() {
-  svg.node().removeEventListener('click', main);
+const rect = svg.append('g');
+rect.append('rect').attr('width', 200).attr('height', 100).attr('fill', 'blue');
+rect.node().addEventListener('click', async function main() {
+  rect.node().removeEventListener('click', main);
+  rect.remove();
 
   const gen = setupBluetooth();
   gen.next();
