@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import runtime from 'serviceworker-webpack-plugin/lib/runtime';
 
 const SERVICE = '0000ffe0-0000-1000-8000-00805f9b34fb';
 const CHARACTERISTIC = '0000ffe1-0000-1000-8000-00805f9b34fb';
@@ -7,7 +8,8 @@ const CHARACTERISTIC = '0000ffe1-0000-1000-8000-00805f9b34fb';
   if ('serviceWorker' in navigator) {
     let reg;
     try {
-      reg = await navigator.serviceWorker.register('/sw.js');
+      reg = runtime.register();
+
       return;
     } catch (error) {
     }

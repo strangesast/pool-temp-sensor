@@ -5,7 +5,7 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-RUN npm build
+RUN npm run-script build
 
 FROM nginx
 COPY --from=build /usr/src/app/dist /var/www/
