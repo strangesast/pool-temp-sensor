@@ -6,9 +6,10 @@ const ServiceWorkerWebpackPlugin = require('serviceworker-webpack-plugin');
 
 module.exports = {
   context: path.join(__dirname, 'src'),
-  entry: {
-    app: './index.js'
-  },
+  entry: [
+    './index.js',
+    './style.scss',
+  ],
   plugins: [
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
@@ -16,6 +17,7 @@ module.exports = {
     }),
     new ServiceWorkerWebpackPlugin({
       entry: path.join(__dirname, 'src/sw.js'),
+      publicPath: '/', // should be updated to be pool-temp-sensor etc
     }),
   ],
   output: {

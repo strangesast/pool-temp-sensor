@@ -2,9 +2,9 @@ const merge = require('webpack-merge');
 const common = require('./webpack.common.js');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const HTMLInlineCSSWebpackPlugin = require("html-inline-css-webpack-plugin").default;
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const HTMLInlineCSSWebpackPlugin = require('html-inline-css-webpack-plugin').default;
 
 module.exports = merge(common, {
   mode: 'production',
@@ -20,14 +20,17 @@ module.exports = merge(common, {
     new CompressionPlugin(),
   ],
   module: {
-    rules: [
-      {
-        test: /\.css$/,
-        use: [
-          MiniCssExtractPlugin.loader,
-          "css-loader",
-        ],
-      },
-    ],
+    rules: [{
+      test: /\.scss$/,
+      use: [
+        MiniCssExtractPlugin.loader,
+        // "style-loader", // creates style nodes from JS strings
+        "css-loader", // translates CSS into CommonJS
+        {
+          loader: "sass-loader",
+          options: { minimize: true },
+        },
+      ]
+    }]
   },
 });

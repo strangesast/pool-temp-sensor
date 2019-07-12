@@ -8,7 +8,8 @@ COPY . .
 RUN npm run-script build
 
 FROM nginx
-COPY --from=build /usr/src/app/dist /var/www/
+COPY --from=build /usr/src/app/dist/ /usr/src/app/manifest.json /usr/src/app/favicon.ico /var/www/
+COPY --from=build /usr/src/app/icons /var/www/icons
 COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80 443
