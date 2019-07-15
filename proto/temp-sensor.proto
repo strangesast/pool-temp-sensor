@@ -1,0 +1,29 @@
+// protoc proto/blog.proto --go_out=plugins=grpc:.
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+
+
+package temp_sensor;
+
+service TempSensor {
+  // returns previous temps (if any) in date range, streams further temps
+  // if enddate is greater than now or undefined
+  rpc GetTemps(DateRange) returns (stream Temps) {}
+
+  // add stream of temps, presumably as they are recorded
+  rpc RecordTemps(stream Temps) returns (google.protobuf.Empty) {}
+
+}
+
+message Temps {
+  map<string, float> values = 1;
+  google.protobuf.Timestamp date = 2;
+}
+
+message DateRange {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+}

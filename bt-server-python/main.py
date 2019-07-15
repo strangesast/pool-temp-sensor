@@ -1,10 +1,11 @@
+# python -m grpc_tools.protoc -I ../proto/ --python_out=. --grpc_python_out=. ../proto/temp-sensor.proto
 import asyncio
 from bleak import discover, BleakClient
 
 serviceUuid = '0000ffe0-0000-1000-8000-00805f9b34fb';
 characteristicUuid = '0000ffe1-0000-1000-8000-00805f9b34fb';
 
-async def run(loop):
+async def request_temperatures(loop):
     device = None
 
     print('looking for devices...')
@@ -24,12 +25,28 @@ async def run(loop):
         while True:
             args = await queue.get()
             print(args)
+            yield args
 
         # await client.stop_notify(characteristicUuid)
 
 
+
+def record_temps(stub, loop):
+
+    iterator = request_temperatures(loop)
+    response = stub.RecordTemps(iterator)
+    # get temperature iterator
+
+
+def run(loop):
+    with grpc.insecure_channel('localhost:50051') as channel:
+        stub = route_guide_pb2_grpc.RouteGuideStub(channel)
+        record_temps(stub)
+
+
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
+
     
     try:
         loop.run_until_complete(run(loop))
