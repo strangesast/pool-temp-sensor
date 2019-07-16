@@ -2,8 +2,8 @@ version: '3'
 services:
   client:
     build: client
-  api:
-    build: server-node
+  server:
+    build: server-go
     expose:
       - "3000"
   mongo:

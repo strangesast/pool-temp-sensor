@@ -1,12 +1,8 @@
-// protoc proto/blog.proto --go_out=plugins=grpc:.
+// protoc proto/temp-sensor.proto --go_out=plugins=grpc:.
 syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
-
-
-
-package temp_sensor;
 
 service TempSensor {
   // returns previous temps (if any) in date range, streams further temps

@@ -1,9 +1,9 @@
-package main // import github.com/strangesast/pool-temp-sensor/server
+package main // import github.com/strangesast/pool-temp-sensor/server-go
 
 import (
 	"context"
 	"fmt"
-	pb "github.com/strangesast/pool-temp-sensor/proto"
+	pb "github.com/strangesast/pool-temp-sensor/server-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -11,6 +11,8 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 )
 
 var db *mongo.Client
@@ -49,7 +51,7 @@ func (s *tempSensorServer) RecordTemps(stream pb.TempSensor_RecordTempsServer) e
 		if err == io.EOF {
 			// endTime := time.Now()
 			return nil
-			// return stream.SendAndClose(&pb.RouteSummary{
+			// return stream.SendAndClose(&RouteSummary{
 			// 	PointCount:   pointCount,
 			// 	FeatureCount: featureCount,
 			// 	Distance:     distance,
@@ -70,14 +72,14 @@ func (s *tempSensorServer) RecordTemps(stream pb.TempSensor_RecordTempsServer) e
 }
 
 func main() {
+	fmt.Println("Starting...")
 
+	fmt.Println("Waiting on listener...")
 	listener, err := net.Listen("tcp", ":50051")
 
 	if err != nil {
 		log.Fatalf("Unable to listen on port 50051: %v", err)
 	}
-
-	fmt.Println("Listening on port 50051")
 
 	opts := []grpc.ServerOption{}
 
@@ -85,10 +87,24 @@ func main() {
 
 	srv := &tempSensorServer{}
 
+	fmt.Println("Registering grpc server...")
 	pb.RegisterTempSensorServer(s, srv)
 
 	mongoCtx = context.Background()
+	fmt.Println("Connecting to mongo...")
 	db, err = mongo.Connect(mongoCtx, options.Client().ApplyURI("mongodb://localhost:27017"))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.Ping(mongoCtx, nil)
+
+	if err != nil {
+		log.Fatalf("Could not connect to MongoDB: %v\n", err)
+	} else {
+		fmt.Println("Connected to MongoDB")
+	}
 
 	temps = db.Database("temp-sensor").Collection("temps")
 
@@ -97,9 +113,17 @@ func main() {
 			log.Fatalf("Failed to serve: %v", err)
 		}
 	}()
+	fmt.Println("Listening on port 50051")
 
-	if err != nil {
-		log.Fatal("failed to connect to mongo")
-	}
+	c := make(chan os.Signal)
 
+	signal.Notify(c, os.Interrupt)
+
+	<-c
+	fmt.Println("\nStopping...")
+	s.Stop()
+	listener.Close()
+	fmt.Println("Closing MongoDB connection")
+	db.Disconnect(mongoCtx)
+	fmt.Println("Done.")
 }
