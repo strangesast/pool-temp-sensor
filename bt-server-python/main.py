@@ -1,8 +1,7 @@
-# python -m grpc_tools.protoc -I ../proto/ --python_out=. --grpc_python_out=. ../proto/temp-sensor.proto
 #import asyncio
 from bleak import discover, BleakClient
-import temp_sensor_pb2_grpc
-import temp_sensor_pb2
+import pooltempsensor_pb2_grpc
+import pooltempsensor_pb2
 import grpc
 from google.protobuf.timestamp_pb2 import Timestamp
 import time
@@ -38,7 +37,7 @@ characteristicUuid = '0000ffe1-0000-1000-8000-00805f9b34fb';
 
 def test():
     while True:
-        temps = temp_sensor_pb2.Temps(values={'000000': 0.01, '000001': 0.02}, date=Timestamp())
+        temps = pooltempsensor_pb2.Temps(values={'000000': 0.01, '000001': 0.02}, date=Timestamp())
         print('temps')
         print(temps)
         yield temps
@@ -49,7 +48,7 @@ if __name__ == '__main__':
     #loop = asyncio.get_event_loop()
 
     with grpc.insecure_channel('localhost:50051') as channel:
-        stub = temp_sensor_pb2_grpc.TempSensorStub(channel)
+        stub = pooltempsensor_pb2_grpc.TempSensorStub(channel)
         iterator = test()
         response = stub.RecordTemps(iterator)
         print('response', response)
