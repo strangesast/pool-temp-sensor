@@ -61,12 +61,7 @@ if __name__ == '__main__':
     with grpc.insecure_channel('localhost:50051') as channel:
         stub = pooltempsensor_pb2_grpc.TempSensorStub(channel)
         response = stub.RecordTemps(iterator)
-        print(dir(response))
-        print('Recorded {} values from {} sensors'.format(response.count, response.sensorCount))
-
-
-
-
+        print('Recorded {} values from {} new sensors'.format(response.count, response.sensorCount))
     
     #try:
     #    loop.run_until_complete(run(loop))
