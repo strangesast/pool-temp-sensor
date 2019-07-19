@@ -15,19 +15,54 @@ import (
 	"os/signal"
 )
 
-var db *mongo.Client
+var client *mongo.Client
 var temps *mongo.Collection
+var sensors *mongo.Collection
 var mongoCtx context.Context
+
+var ids map[string]struct{}
 
 // TempSensorServer handles retrieving and storing temperature readings
 type tempSensorServer struct {
+}
+
+func initializeIDs(ctx context.Context) error {
+	result, err := temps.Distinct(ctx, "id", bson.M{})
+
+	if err != nil {
+		return err
+	}
+
+	ids = make(map[string]struct{})
+
+	for _, id := range result {
+		ids[id.(string)] = struct{}{}
+	}
+
+	return nil
+}
+
+func checkID(ctx context.Context, id string) error {
+	if _, ok := ids[id]; ok {
+		return nil
+	}
+	_, err := sensors.UpdateOne(ctx, bson.M{"id": id}, bson.M{"id": id}, options.Update().SetUpsert(true))
+	return err
 }
 
 // GetTemps retrieves temperature readings in date range. if enddate is undefined,
 // stream new readings
 func (s *tempSensorServer) GetTemps(req *pb.DateRange, stream pb.TempSensor_GetTempsServer) error {
 	ctx := stream.Context()
-	cur, err := temps.Find(ctx, bson.D{})
+	pipeline := []bson.M{
+		bson.M{
+			"$bucketAuto": bson.M{
+				"groupBy": "date",
+			},
+			"buckets": 100,
+		},
+	}
+	cur, err := temps.Aggregate(ctx, pipeline)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,6 +102,10 @@ func (s *tempSensorServer) RecordTemps(stream pb.TempSensor_RecordTempsServer) e
 			if err != nil {
 				log.Fatal(err)
 			}
+			err = checkID(ctx, id)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }
@@ -92,13 +131,13 @@ func main() {
 
 	mongoCtx = context.Background()
 	fmt.Println("Connecting to mongo...")
-	db, err = mongo.Connect(mongoCtx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	client, err = mongo.Connect(mongoCtx, options.Client().ApplyURI("mongodb://localhost:27017"))
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = db.Ping(mongoCtx, nil)
+	err = client.Ping(mongoCtx, nil)
 
 	if err != nil {
 		log.Fatalf("Could not connect to MongoDB: %v\n", err)
@@ -106,7 +145,16 @@ func main() {
 		fmt.Println("Connected to MongoDB")
 	}
 
-	temps = db.Database("temp-sensor").Collection("temps")
+	db := client.Database("temp-sensor")
+	temps = db.Collection("temps")
+	sensors = db.Collection("sensors")
+
+	fmt.Println("Initializing...")
+
+	err = initializeIDs(mongoCtx)
+	if err != nil {
+		log.Fatalf("Error initializing! %v\n", err)
+	}
 
 	go func() {
 		if err := s.Serve(listener); err != nil {
@@ -124,6 +172,6 @@ func main() {
 	s.Stop()
 	listener.Close()
 	fmt.Println("Closing MongoDB connection")
-	db.Disconnect(mongoCtx)
+	client.Disconnect(mongoCtx)
 	fmt.Println("Done.")
 }
