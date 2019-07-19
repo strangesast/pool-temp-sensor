@@ -5,6 +5,7 @@ import (
 	"fmt"
 	pb "github.com/strangesast/pool-temp-sensor/server-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
+	// "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
@@ -13,6 +14,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"time"
 )
 
 var client *mongo.Client
@@ -26,6 +28,7 @@ var ids map[string]struct{}
 type tempSensorServer struct {
 }
 
+// initialize which sensor ids have already been stored in the database
 func initializeIDs(ctx context.Context) error {
 	result, err := temps.Distinct(ctx, "id", bson.M{})
 
@@ -40,14 +43,6 @@ func initializeIDs(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func checkID(ctx context.Context, id string) error {
-	if _, ok := ids[id]; ok {
-		return nil
-	}
-	_, err := sensors.UpdateOne(ctx, bson.M{"id": id}, bson.M{"id": id}, options.Update().SetUpsert(true))
-	return err
 }
 
 // GetTemps retrieves temperature readings in date range. if enddate is undefined,
@@ -81,32 +76,84 @@ func (s *tempSensorServer) GetTemps(req *pb.DateRange, stream pb.TempSensor_GetT
 }
 
 func (s *tempSensorServer) RecordTemps(stream pb.TempSensor_RecordTempsServer) error {
+	var err error
+	var count int32
+	var uniqueSensorsCount int32
+	var session mongo.Session
+	if session, err = client.StartSession(); err != nil {
+		log.Fatal(err)
+	}
 	for {
-		reading, err := stream.Recv()
-		if err == io.EOF {
-			// endTime := time.Now()
-			return nil
-			// return stream.SendAndClose(&RouteSummary{
-			// 	PointCount:   pointCount,
-			// 	FeatureCount: featureCount,
-			// 	Distance:     distance,
-			// 	ElapsedTime:  int32(endTime.Sub(startTime).Seconds()),
-			// })
+		var reading *pb.Temps
+		if reading, err = stream.Recv(); err == io.EOF {
+			return stream.SendAndClose(&pb.TempsWriteSummary{
+				Count:       count,
+				SensorCount: uniqueSensorsCount,
+			})
+		} else if err != nil {
+			log.Fatal(err)
 		}
-		if err != nil {
-			return err
+
+		if err = session.StartTransaction(); err != nil {
+			log.Fatal(err)
 		}
+
 		ctx := stream.Context()
-		for id, value := range reading.Values {
-			_, err := temps.InsertOne(ctx, bson.M{"id": id, "value": value, "date": reading.Date})
-			if err != nil {
+
+		if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
+			var tempsWrites []mongo.WriteModel
+			var sensorWrites []mongo.WriteModel
+			for id, value := range reading.Values {
+				if _, ok := ids[id]; !ok {
+					sensorWrites = append(sensorWrites, mongo.NewUpdateOneModel().
+						SetFilter(bson.M{"id": id}).
+						SetUpdate(bson.M{"$set": bson.M{"id": id}}).SetUpsert(true))
+					ids[id] = struct{}{}
+					uniqueSensorsCount++
+				}
+				date := time.Unix(reading.Date.GetSeconds(), 0)
+				sec := date.Second()
+				date = date.Truncate(time.Minute)
+
+				filter := bson.M{"id": id, "date": date}
+				update := bson.M{
+					"$push": bson.M{
+						"values": bson.M{
+							"second": sec,
+							"value":  value,
+						},
+					},
+					"$inc": bson.M{
+						"total": value,
+						"count": 1,
+					},
+				}
+				model := mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update).SetUpsert(true)
+
+				tempsWrites = append(tempsWrites, model)
+
+				count++
+
+			}
+			if len(tempsWrites) > 0 {
+				if _, err = temps.BulkWrite(ctx, tempsWrites); err != nil {
+					log.Fatal(err)
+				}
+			}
+			if len(sensorWrites) > 0 {
+				if _, err = sensors.BulkWrite(ctx, sensorWrites); err != nil {
+					log.Fatal(err)
+				}
+			}
+			if err = session.CommitTransaction(sc); err != nil {
 				log.Fatal(err)
 			}
-			err = checkID(ctx, id)
-			if err != nil {
-				log.Fatal(err)
-			}
+			return nil
+		}); err != nil {
+			log.Fatal(err)
 		}
+
+		fmt.Println(reading)
 	}
 }
 

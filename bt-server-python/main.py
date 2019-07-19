@@ -1,4 +1,6 @@
 #import asyncio
+import time
+from pprint import pprint
 from bleak import discover, BleakClient
 import pooltempsensor_pb2_grpc
 import pooltempsensor_pb2
@@ -34,12 +36,18 @@ characteristicUuid = '0000ffe1-0000-1000-8000-00805f9b34fb';
 #        # await client.stop_notify(characteristicUuid)
 
 
+def now():
+    now = time.time()
+    seconds = int(now)
+    nanos = int((now - seconds) * 10**9)
+    timestamp = Timestamp(seconds=seconds, nanos=nanos)
+    return timestamp
+
 
 def test():
-    while True:
-        temps = pooltempsensor_pb2.Temps(values={'000000': 0.01, '000001': 0.02}, date=Timestamp())
-        print('temps')
-        print(temps)
+    for each in range(10):
+        date = now()
+        temps = pooltempsensor_pb2.Temps(values={'000000': 0.01, '000001': 0.02}, date=date)
         yield temps
         time.sleep(1)
 
@@ -47,11 +55,15 @@ def test():
 if __name__ == '__main__':
     #loop = asyncio.get_event_loop()
 
+    iterator = test()
+    
+    print('Recording values...')
     with grpc.insecure_channel('localhost:50051') as channel:
         stub = pooltempsensor_pb2_grpc.TempSensorStub(channel)
-        iterator = test()
         response = stub.RecordTemps(iterator)
-        print('response', response)
+        print(dir(response))
+        print('Recorded {} values from {} sensors'.format(response.count, response.sensorCount))
+
 
 
 
