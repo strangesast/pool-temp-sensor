@@ -1,5 +1,9 @@
 import * as d3 from 'd3';
 import runtime from 'serviceworker-webpack-plugin/lib/runtime';
+import * as pb from '../pooltempsensor_grpc_web_pb';
+
+console.log(pb);
+
 
 const SERVICE = '0000ffe0-0000-1000-8000-00805f9b34fb';
 const CHARACTERISTIC = '0000ffe1-0000-1000-8000-00805f9b34fb';
