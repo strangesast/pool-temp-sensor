@@ -1,5 +1,6 @@
 #import asyncio
 import time
+import random
 from pprint import pprint
 from bleak import discover, BleakClient
 import pooltempsensor_pb2_grpc
@@ -47,9 +48,11 @@ def now():
 def test():
     for each in range(10):
         date = now()
-        temps = pooltempsensor_pb2.Temps(values={'000000': 0.01, '000001': 0.02}, date=date)
+        temps = pooltempsensor_pb2.Temps(values={
+            '000000': random.random(),
+            '000001': random.random(),
+            }, date=date)
         yield temps
-        time.sleep(1)
 
 
 if __name__ == '__main__':
@@ -61,7 +64,10 @@ if __name__ == '__main__':
     with grpc.insecure_channel('localhost:50051') as channel:
         stub = pooltempsensor_pb2_grpc.TempSensorStub(channel)
         response = stub.RecordTemps(iterator)
-        print('Recorded {} values from {} new sensors'.format(response.count, response.sensorCount))
+        if response is None:
+            print('no response')
+        else:
+            print('Recorded {} values from {} new sensors'.format(response.count, response.sensorCount))
     
     #try:
     #    loop.run_until_complete(run(loop))

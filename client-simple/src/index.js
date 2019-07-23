@@ -1,8 +1,13 @@
 import * as d3 from 'd3';
 import runtime from 'serviceworker-webpack-plugin/lib/runtime';
-import * as pb from '../pooltempsensor_grpc_web_pb';
+import {DateRange, TempSensorClient} from '../pooltempsensor_grpc_web_pb';
+import * as pb from '../pooltempsensor_pb';
 
 console.log(pb);
+
+const client = new TempSensorClient('http://' + window.location.hostname + ':8080', null, null)
+
+console.log('client', client);
 
 
 const SERVICE = '0000ffe0-0000-1000-8000-00805f9b34fb';
