@@ -1,1 +1,1 @@
-docker run --rm strangesast/pool-temp-sensor_proxy
+docker run --rm --network=host strangesast/pool-temp-sensor_proxy

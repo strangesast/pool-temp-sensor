@@ -2,7 +2,8 @@ const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ServiceWorkerWebpackPlugin = require('serviceworker-webpack-plugin');
-
+const CopyPlugin = require('copy-webpack-plugin');
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = {
   context: path.join(__dirname, 'src'),
@@ -12,6 +13,13 @@ module.exports = {
   ],
   plugins: [
     new CleanWebpackPlugin(),
+    new CopyPlugin([
+      'manifest.json',
+    ]),
+    new MiniCssExtractPlugin({
+      filename: "[name].css",
+      chunkFilename: "[id].css"
+    }),
     new HtmlWebpackPlugin({
       template: 'index.html',
     }),
@@ -20,6 +28,20 @@ module.exports = {
       publicPath: '/', // should be updated to be pool-temp-sensor etc
     }),
   ],
+  module: {
+    rules: [{
+      test: /\.scss$/,
+      use: [
+        MiniCssExtractPlugin.loader,
+        // "style-loader", // creates style nodes from JS strings
+        "css-loader", // translates CSS into CommonJS
+        {
+          loader: "sass-loader",
+          options: { minimize: true },
+        },
+      ]
+    }]
+  },
   output: {
     filename: '[name].bundle.js',
     path: path.resolve(__dirname, 'dist')
