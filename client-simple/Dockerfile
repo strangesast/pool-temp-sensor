@@ -31,6 +31,7 @@ FROM base
 COPY --from=build /usr/src/app/dist/ /usr/src/app/favicon.ico /var/www/
 COPY --from=build /usr/src/app/icons /var/www/icons
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY compression.conf ssl.conf /etc/nginx/
 
 RUN mkdir -p /etc/nginx/logs
 

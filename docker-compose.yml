@@ -1,12 +1,15 @@
 version: '3'
 services:
   client:
-    build: client
+    image: strangesast/pool-temp-sensor_client
+    build: client-simple
+    ports:
+      - 80:80
+      - 443:443
   server:
+    image: strangesast/pool-temp-sensor_server-go
     build: server-go
-    expose:
-      - "3000"
+    environment:
+      - MONGO_HOST=mongo
   mongo:
     image: "mongo"
-    expose:
-      - "27017"

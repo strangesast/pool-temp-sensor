@@ -3,6 +3,7 @@ package main // import github.com/strangesast/pool-temp-sensor/server-go
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/ptypes"
 	pb "github.com/strangesast/pool-temp-sensor/server-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	// "go.mongodb.org/mongo-driver/bson/primitive"
@@ -48,29 +49,38 @@ func initializeIDs(ctx context.Context) error {
 // GetTemps retrieves temperature readings in date range. if enddate is undefined,
 // stream new readings
 func (s *tempSensorServer) GetTemps(req *pb.DateRange, stream pb.TempSensor_GetTempsServer) error {
-	ctx := stream.Context()
-	pipeline := []bson.M{
-		bson.M{
-			"$bucketAuto": bson.M{
-				"groupBy": "date",
-			},
-			"buckets": 100,
+	// ctx := stream.Context()
+	// pipeline := []bson.M{
+	// 	bson.M{
+	// 		"$bucketAuto": bson.M{
+	// 			"groupBy": "date",
+	// 		},
+	// 		"buckets": 100,
+	// 	},
+	// }
+	// cur, err := temps.Aggregate(ctx, pipeline)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer cur.Close(ctx)
+	// for cur.Next(ctx) {
+	// 	var result pb.Temps
+	// 	err := cur.Decode(&result)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	if err := stream.Send(&result); err != nil {
+	// 		return err
+	// 	}
+	// }
+	result := pb.Temps{
+		Date: ptypes.TimestampNow(),
+		Values: map[string]float32{
+			"000000": float32(0.0),
 		},
 	}
-	cur, err := temps.Aggregate(ctx, pipeline)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer cur.Close(ctx)
-	for cur.Next(ctx) {
-		var result pb.Temps
-		err := cur.Decode(&result)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := stream.Send(&result); err != nil {
-			return err
-		}
+	if err := stream.Send(&result); err != nil {
+		return err
 	}
 	return nil
 }
@@ -177,8 +187,16 @@ func main() {
 	pb.RegisterTempSensorServer(s, srv)
 
 	mongoCtx = context.Background()
-	fmt.Println("Connecting to mongo...")
-	client, err = mongo.Connect(mongoCtx, options.Client().ApplyURI("mongodb://localhost:27017"))
+
+	mongoHost := os.Getenv("MONGO_HOST")
+	if len(mongoHost) == 0 {
+		mongoHost = "0.0.0.0"
+	}
+
+	uri := "mongodb://" + mongoHost + ":27017"
+	fmt.Printf("Connecting to mongo... (%s)\n", uri)
+
+	client, err = mongo.Connect(mongoCtx, options.Client().ApplyURI(uri))
 
 	if err != nil {
 		log.Fatal(err)
