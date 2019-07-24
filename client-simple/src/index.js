@@ -3,8 +3,8 @@ import runtime from 'serviceworker-webpack-plugin/lib/runtime';
 import {DateRange, TempSensorClient} from '../pooltempsensor_grpc_web_pb';
 import * as pb from '../pooltempsensor_pb';
 
-// const client = new TempSensorClient(window.location.origin, null, null);
-const client = new TempSensorClient('http://' + window.location.hostname + ':8080', null, null);
+const client = new TempSensorClient(window.location.origin, null, null);
+// const client = new TempSensorClient('http://' + window.location.hostname + ':8080', null, null);
 // const client = new TempSensorClient('http://' + window.location.hostname + ':50051', null, null);
 
 const req = new DateRange()

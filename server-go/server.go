@@ -171,7 +171,7 @@ func main() {
 	fmt.Println("Starting...")
 
 	fmt.Println("Waiting on listener...")
-	listener, err := net.Listen("tcp", ":50051")
+	listener, err := net.Listen("tcp", "0.0.0.0:50051")
 
 	if err != nil {
 		log.Fatalf("Unable to listen on port 50051: %v", err)

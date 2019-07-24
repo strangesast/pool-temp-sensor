@@ -2,13 +2,22 @@ version: '3'
 services:
   client:
     image: strangesast/pool-temp-sensor_client
-    build: client-simple
+    build:
+      context: ./
+      dockerfile: ./client-simple/Dockerfile
     ports:
       - 80:80
       - 443:443
+  proxy:
+    image: strangesast/pool-temp-sensor_proxy
+    build:
+      context: ./
+      dockerfile: ./proxy/Dockerfile
   server:
     image: strangesast/pool-temp-sensor_server-go
-    build: server-go
+    build:
+      context: ./
+      dockerfile: ./server-go/Dockerfile
     environment:
       - MONGO_HOST=mongo
   mongo:
