@@ -1,8 +1,9 @@
 #import asyncio
+import os
 import time
 import random
 from pprint import pprint
-from bleak import discover, BleakClient
+#from bleak import discover, BleakClient
 import pooltempsensor_pb2_grpc
 import pooltempsensor_pb2
 import grpc
@@ -61,7 +62,14 @@ if __name__ == '__main__':
     iterator = test()
     
     print('Recording values...')
-    with grpc.insecure_channel('localhost:50051') as channel:
+    host = os.environ.get('GRPC_SERVER') or 'localhost';
+    port = os.environ.get('GRPC_SERVER_PORT') or '50051';
+
+    with open('../certs/domain.crt', 'rb') as f:
+      credentials = grpc.ssl_channel_credentials(root_certificates=f.read())
+
+    with grpc.secure_channel('{}:{}'.format(host, port), credentials) as channel:
+    #with grpc.insecure_channel('{}:{}'.format(host, port)) as channel:
         stub = pooltempsensor_pb2_grpc.TempSensorStub(channel)
         response = stub.RecordTemps(iterator)
         if response is None:

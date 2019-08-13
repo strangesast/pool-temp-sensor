@@ -3,19 +3,27 @@ import runtime from 'serviceworker-webpack-plugin/lib/runtime';
 import {DateRange, TempSensorClient} from '../pooltempsensor_grpc_web_pb';
 import * as pb from '../pooltempsensor_pb';
 
-const client = new TempSensorClient(window.location.origin, null, null);
+const CLIENT_URI = window.location.origin;
+//const CLIENT_URI = 'http://localhost:80';
+const client = new TempSensorClient(CLIENT_URI, null, null);
 // const client = new TempSensorClient('http://' + window.location.hostname + ':8080', null, null);
 // const client = new TempSensorClient('http://' + window.location.hostname + ':50051', null, null);
 
 const req = new DateRange()
 console.log(req);
-
-client.getTemps(req, {}, (err, response) => {
+const md = {};
+const call = client.getTemps(req, md, (err, response) => {
   console.log(err, response);
+  if (err != null) {
+    setTimeout(cb, 1000);
+  }
 });
 
+call.on('status', status => {
+  console.log(status.code);
+  console.log(status);
+});
 console.log(client);
-
 
 const SERVICE = '0000ffe0-0000-1000-8000-00805f9b34fb';
 const CHARACTERISTIC = '0000ffe1-0000-1000-8000-00805f9b34fb';

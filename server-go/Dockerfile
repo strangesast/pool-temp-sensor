@@ -8,17 +8,18 @@ WORKDIR /app
 
 ENV GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 
 
-COPY go.mod go.sum ./
+COPY ./server-go/go.mod ./server-go/go.sum ./
 
 RUN go get -d -v ./...
 
-COPY . .
+COPY ./server-go/ .
 
 RUN go build server.go
 
 FROM base
 
 COPY --from=builder /app/server /server
+COPY ./certs /certs/
 
 EXPOSE 50051
 

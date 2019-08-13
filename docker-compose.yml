@@ -1,24 +1,47 @@
-version: '3'
+version: '3.5'
 services:
-  client:
-    image: strangesast/pool-temp-sensor_client
-    build:
-      context: ./
-      dockerfile: ./client-simple/Dockerfile
-    ports:
-      - 80:80
-      - 443:443
-  proxy:
-    image: strangesast/pool-temp-sensor_proxy
-    build:
-      context: ./
-      dockerfile: ./proxy/Dockerfile
+  #client:
+  #  image: strangesast/pool-temp-sensor_client
+  #  build:
+  #    context: ./
+  #    dockerfile: ./client-simple/Dockerfile
+  #  ports:
+  #    - 80:80
+  #    - 443:443
+  #proxy:
+  #  image: strangesast/pool-temp-sensor_proxy
+  #  build:
+  #    context: ./
+  #    dockerfile: ./proxy/Dockerfile
   server:
     image: strangesast/pool-temp-sensor_server-go
     build:
       context: ./
+      network: host # due to ugly networking on host
       dockerfile: ./server-go/Dockerfile
+    ports:
+      - "50051:50051"
     environment:
       - MONGO_HOST=mongo
+    networks:
+      - innernet
+
+  client:
+    image: strangesast/pool-temp-sensor_client
+    build:
+      context: ./
+      network: host # due to ugly networking on host
+      dockerfile: ./client-simple/Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - innernet
+
   mongo:
     image: "mongo"
+    networks:
+      - innernet
+networks:
+  innernet:
+    name: pool-temp-sensor_default

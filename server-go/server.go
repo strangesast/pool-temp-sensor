@@ -2,14 +2,19 @@ package main // import github.com/strangesast/pool-temp-sensor/server-go
 
 import (
 	"context"
+	// "crypto/tls"
 	"fmt"
+
 	"github.com/golang/protobuf/ptypes"
 	pb "github.com/strangesast/pool-temp-sensor/server-go/proto"
 	"go.mongodb.org/mongo-driver/bson"
+	//"google.golang.org/grpc/credentials"
 	// "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+
 	"io"
 	"log"
 	"net"
@@ -79,6 +84,7 @@ func (s *tempSensorServer) GetTemps(req *pb.DateRange, stream pb.TempSensor_GetT
 			"000000": float32(0.0),
 		},
 	}
+	log.Println("got request GetTemps")
 	if err := stream.Send(&result); err != nil {
 		return err
 	}
@@ -167,16 +173,32 @@ func (s *tempSensorServer) RecordTemps(stream pb.TempSensor_RecordTempsServer) e
 	}
 }
 
+const port = "0.0.0.0:50051"
+
 func main() {
 	fmt.Println("Starting...")
 
 	fmt.Println("Waiting on listener...")
-	listener, err := net.Listen("tcp", "0.0.0.0:50051")
+
+	//cer, err := tls.LoadX509KeyPair("../certs/domain.crt", "../certs/domain.key")
+	//if err != nil {
+	//	log.Fatalf("Unable to load certificates: %v", err)
+	//}
+	// config := &tls.Config{Certificates: []tls.Certificate{cer}}
+	// listener, err := tls.Listen("tcp", port, config)
+	listener, err := net.Listen("tcp", port)
 
 	if err != nil {
 		log.Fatalf("Unable to listen on port 50051: %v", err)
 	}
 
+	//creds, err := credentials.NewServerTLSFromFile("../certs/domain.crt", "../certs/domain.key")
+
+	//if err != nil {
+	//	log.Fatalf("Unable to load certificate pair: %v", err)
+	//}
+
+	//opts := []grpc.ServerOption{grpc.Creds(creds)}
 	opts := []grpc.ServerOption{}
 
 	s := grpc.NewServer(opts...)
@@ -185,6 +207,7 @@ func main() {
 
 	fmt.Println("Registering grpc server...")
 	pb.RegisterTempSensorServer(s, srv)
+	reflection.Register(s)
 
 	mongoCtx = context.Background()
 

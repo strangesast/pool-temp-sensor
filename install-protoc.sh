@@ -6,5 +6,7 @@ sudo mv protoc3/bin/* /usr/local/bin/
 
 sudo mv protoc3/include/* /usr/local/include/
 
+rm -r protoc3
+
 sudo chown $USER /usr/local/bin/protoc
 sudo chown -R $USER /usr/local/include/google

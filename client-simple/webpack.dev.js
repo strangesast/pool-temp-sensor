@@ -14,11 +14,11 @@ module.exports = merge(common, {
     contentBase: path.join(__dirname, 'dist'),
     disableHostCheck: true,
     hot: true,
-    proxy: {
-      '/TempSensor': {
-        target: 'http://127.0.0.1:50051',
-      },
-    },
+    // proxy: {
+    //   '/TempSensor': {
+    //     target: 'http://127.0.0.1:50051',
+    //   },
+    // },
   },
   plugins: [],
 });
