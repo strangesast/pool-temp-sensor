@@ -1,0 +1,52 @@
+// protoc proto/temp-sensor.proto --go_out=plugins=grpc:.
+syntax = "proto3";
+
+import "google/protobuf/api.proto";
+import "google/protobuf/timestamp.proto";
+
+//package pooltempsensor;
+
+service TempSensor {
+  // returns previous temps (if any) in date range, streams further temps
+  // if enddate is greater than now or undefined
+  rpc GetTemps(DateRange) returns (stream Temps) {}
+
+  // add stream of temps, presumably as they are recorded
+  //rpc RecordTemps(stream Temps) returns (google.protobuf.Empty) {}
+  rpc RecordTemps(stream Temps) returns (TempsWriteSummary) {}
+
+}
+
+message Temps {
+  map<string, float> values = 1;
+  google.protobuf.Timestamp date = 2;
+}
+
+message TempsWriteSummary {
+  int32 count = 1;
+  int32 sensorCount = 2;
+}
+
+message DateRange {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+}
+
+message ListApisRequest {
+}
+
+message ListApisResponse {
+  repeated google.protobuf.Api apis = 1;
+}
+
+message GetMethodRequest {
+  string method = 1;
+}
+message GetMethodResponse {
+  google.protobuf.Method method = 1;
+}
+
+service ServerReflection {
+  rpc ListApis (ListApisRequest) returns (ListApisResponse);
+  rpc GetMethod (GetMethodRequest) returns (GetMethodResponse);
+}
