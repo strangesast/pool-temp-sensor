@@ -8,9 +8,10 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 module.exports = {
   context: path.join(__dirname, 'src'),
   entry: [
-    './index.js',
+    './index.ts',
     './style.scss',
   ],
+  devtool: 'inline-source-map',
   plugins: [
     new CleanWebpackPlugin(),
     new CopyPlugin([
@@ -29,18 +30,28 @@ module.exports = {
     }),
   ],
   module: {
-    rules: [{
-      test: /\.scss$/,
-      use: [
-        MiniCssExtractPlugin.loader,
-        // "style-loader", // creates style nodes from JS strings
-        "css-loader", // translates CSS into CommonJS
-        {
-          loader: "sass-loader",
-          options: { minimize: true },
-        },
-      ]
-    }]
+    rules: [
+      {
+        test: /\.ts$/,
+        use: 'ts-loader',
+        exclude: /node_modules/
+      },
+      {
+        test: /\.scss$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          // "style-loader", // creates style nodes from JS strings
+          "css-loader", // translates CSS into CommonJS
+          {
+            loader: "sass-loader",
+            options: { minimize: true },
+          },
+        ]
+      }
+    ]
+  },
+  resolve: {
+    extensions: ['.ts', '.js']
   },
   output: {
     filename: '[name].bundle.js',

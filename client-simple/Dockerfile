@@ -13,10 +13,10 @@ FROM build
 COPY --from=proto-build /usr/src/proto ./proto
 
 # copy source js / html template / style files, preserving src folder
-COPY client-simple/src src/
+COPY client-simple/ ./
 
 # should source compiled proto files from another docker image
-COPY client-simple/webpack.common.js client-simple/webpack.prod.js ./
+COPY client-simple/webpack.common.js client-simple/webpack.dev.js client-simple/webpack.prod.js ./
 RUN npm run-script build
 
 #COPY client-simple/ .
