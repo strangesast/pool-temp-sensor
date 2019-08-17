@@ -2,16 +2,12 @@ import * as d3 from 'd3';
 import runtime from 'serviceworker-webpack-plugin/lib/runtime';
 console.log(require('../proto/pooltempsensor_grpc_web_pb'));
 
-import {Timestamp} from 'google-protobuf/google/protobuf/timestamp_pb';
-import {TempSensorClient} from '../proto/PooltempsensorServiceClientPb';
-import{DateRange} from '../proto/pooltempsensor_pb';
-//import * as pb from '../proto/pooltempsensor_pb';
+import { Timestamp } from 'google-protobuf/google/protobuf/timestamp_pb';
+import { TempSensorClient } from 'pool-temp-sensor_proto/build/PooltempsensorServiceClientPb';
+import { DateRange } from 'pool-temp-sensor_proto/build/pooltempsensor_pb';
 
 const CLIENT_URI = window.location.origin;
-//const CLIENT_URI = 'http://localhost:80';
 const client = new TempSensorClient(CLIENT_URI, null, null);
-// const client = new TempSensorClient('http://' + window.location.hostname + ':8080', null, null);
-// const client = new TempSensorClient('http://' + window.location.hostname + ':50051', null, null);
 
 const dateRange = new DateRange()
 const start = new Timestamp();
@@ -24,8 +20,7 @@ const md = {};
 const call = client.getTemps(dateRange, md)
 console.log('call', call);
 call.on('status', status => {
-  console.log(status.code);
-  console.log(status);
+  console.log('status', status);
 });
 call.on('data', data => {
   console.log('data', data);

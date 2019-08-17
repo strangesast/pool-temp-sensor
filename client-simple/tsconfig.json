@@ -5,7 +5,9 @@
       "dom",
       "es2018"
     ],
-    "sourceMap": true
+    "sourceMap": true,
+    "rootDirs": [
+    ]
   },
   "files": [
     "src/index.ts"

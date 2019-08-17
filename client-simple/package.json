@@ -10,9 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bar": "file:../proto",
     "d3": "^5.9.7",
     "google-protobuf": "^3.9.0",
     "grpc-web": "^1.0.5",
+    "pool-temp-sensor_proto": "file:../proto",
     "xmlhttprequest": "^1.8.0"
   },
   "devDependencies": {
