@@ -1,10 +1,9 @@
 import * as d3 from 'd3';
 import runtime from 'serviceworker-webpack-plugin/lib/runtime';
-console.log(require('../proto/pooltempsensor_grpc_web_pb'));
 
 import { Timestamp } from 'google-protobuf/google/protobuf/timestamp_pb';
-import { TempSensorClient } from 'pool-temp-sensor_proto/build/PooltempsensorServiceClientPb';
-import { DateRange } from 'pool-temp-sensor_proto/build/pooltempsensor_pb';
+import { TempSensorClient } from 'pool-temp-sensor_proto/PooltempsensorServiceClientPb';
+import { DateRange } from 'pool-temp-sensor_proto/pooltempsensor_pb';
 
 const CLIENT_URI = window.location.origin;
 const client = new TempSensorClient(CLIENT_URI, null, null);

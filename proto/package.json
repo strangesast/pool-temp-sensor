@@ -3,12 +3,15 @@
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "build": "build.sh"
-  },
   "author": "",
   "license": "ISC",
   "files": [
-    "build/*"
-  ]
+    "pooltempsensor_grpc_web_pb.js",
+    "PooltempsensorServiceClientPb.ts",
+    "pooltempsensor_pb.js"
+  ],
+  "dependencies": {
+    "google-protobuf": "^3.9.1",
+    "grpc-web": "^1.0.6"
+  }
 }

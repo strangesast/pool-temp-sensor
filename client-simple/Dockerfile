@@ -4,13 +4,14 @@ FROM node:12 as build
 # a place to build
 WORKDIR /usr/src/app
 
+FROM pool-temp-sensor_proto-build as proto-build
+FROM build
+COPY --from=proto-build /usr/src/proto /usr/src/proto
+RUN cd /usr/src/proto && npm install
+
 # limit rebuilding from this image layer to when dependencies are updated.
 COPY client-simple/package*.json ./
 RUN npm install
-
-FROM pool-temp-sensor_proto-build as proto-build
-FROM build
-COPY --from=proto-build /usr/src/proto ./proto
 
 # copy source js / html template / style files, preserving src folder
 COPY client-simple/ ./
