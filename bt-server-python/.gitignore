@@ -1,2 +1,4 @@
 /env/
 __pycache__
+pooltempsensor_pb2_grpc.py
+pooltempsensor_pb2.py
