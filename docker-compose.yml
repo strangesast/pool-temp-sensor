@@ -1,6 +1,6 @@
 version: "3.7"
 services:
-  envoy:
+  proxy:
     build:
       network: host
       context: .
@@ -11,60 +11,37 @@ services:
       - "80"
       - "8001"
     ports:
-      - "8000:80"
+      - "80:80"
       - "8001:8001"
-  proto-build:
-    image: pool-temp-sensor_proto-build
-    build:
-      network: host
-      context: .
-      dockerfile: proto/Dockerfile
   client:
     build:
       network: host
       context: .
       dockerfile: client-simple/Dockerfile
-    depends_on:
-      - proto-build
-    expose:
-      - "80"
     networks:
       innernet:
         aliases:
           - client
+    expose:
+      - "80"
   server:
     build:
       network: host
       context: .
-      dockerfile: ./server-go/Dockerfile
+      dockerfile: server-go/Dockerfile
     networks:
       innernet:
         aliases:
           - server
-    environment:
-      - MONGO_HOST=mongo
     expose:
       - "50051"
+    environment:
+      - MONGO_HOST=mongo
   mongo:
     image: "mongo"
     networks:
       innernet:
         aliases:
           - mongo
-  #service2:
-  #  build:
-  #    network: host
-  #    context: .
-  #    dockerfile: Dockerfile-service
-  #  volumes:
-  #    - ./service-envoy.yaml:/etc/service-envoy.yaml
-  #  networks:
-  #    innernet:
-  #      aliases:
-  #        - service2
-  #  environment:
-  #    - SERVICE_NAME=2
-  #  expose:
-  #    - "80"
 networks:
   innernet: {}

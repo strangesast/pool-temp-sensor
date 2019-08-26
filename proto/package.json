@@ -1,9 +1,7 @@
 {
   "name": "pool-temp-sensor_proto",
   "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
-  "author": "",
+  "author": "Sam Zagrobelny <strangesast@gmail.com>",
   "license": "ISC",
   "files": [
     "pooltempsensor_grpc_web_pb.js",

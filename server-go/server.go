@@ -5,7 +5,7 @@ import (
 	// "crypto/tls"
 	"fmt"
 	"github.com/golang/protobuf/ptypes"
-	pb "github.com/strangesast/pool-temp-sensor/server-go/proto"
+	pb "github.com/strangesast/pool-temp-sensor/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	//"google.golang.org/grpc/credentials"
 	// "go.mongodb.org/mongo-driver/bson/primitive"
