@@ -1,0 +1,5 @@
+/env/
+/__pycache__/
+Dockerfile
+pooltempsensor_pb2_grpc.py
+pooltempsensor_pb2.py

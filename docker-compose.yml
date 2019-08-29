@@ -1,12 +1,61 @@
-version: '3'
+version: "3.7"
 services:
-  client:
-    build: client
-  api:
-    build: server-node
+  proxy:
+    build:
+      network: host
+      context: .
+      dockerfile: proxy/Dockerfile
+    networks:
+      - innernet
     expose:
-      - "3000"
+      - "80"
+      - "8001"
+    ports:
+      - "80:80"
+      - "8001:8001"
+  client:
+    build:
+      network: host
+      context: .
+      dockerfile: client-simple/Dockerfile
+    networks:
+      innernet:
+        aliases:
+          - client
+    expose:
+      - "80"
+  server:
+    build:
+      network: host
+      context: .
+      dockerfile: server-go/Dockerfile
+    networks:
+      innernet:
+        aliases:
+          - server
+    expose:
+      - "50051"
+    ports:
+      - "50051:50051"
+    environment:
+      - MONGO_HOST=mongo
+  bt:
+    build:
+      network: host
+      context: .
+      dockerfile: bt-server-python/Dockerfile
+    networks:
+      innernet:
+        aliases:
+          - bt
+    environment:
+      - GRPC_HOST=server
+      - GRPC_PORT=50051
   mongo:
     image: "mongo"
-    expose:
-      - "27017"
+    networks:
+      innernet:
+        aliases:
+          - mongo
+networks:
+  innernet: {}
