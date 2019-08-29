@@ -98,16 +98,22 @@ func (s *tempSensorServer) RecordTemps(stream pb.TempSensor_RecordTempsServer) e
 	if session, err = client.StartSession(); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("receiving temps")
 	for {
 		var reading *pb.Temps
 		if reading, err = stream.Recv(); err == io.EOF {
+			fmt.Println("received last reading")
+
 			return stream.SendAndClose(&pb.TempsWriteSummary{
 				Count:       count,
 				SensorCount: uniqueSensorsCount,
 			})
 		} else if err != nil {
-			log.Fatal(err)
+			fmt.Printf("error receiving reading %v\n", err)
+			return err
 		}
+
+		fmt.Println("got reading", reading)
 
 		if err = session.StartTransaction(); err != nil {
 			log.Fatal(err)
@@ -168,7 +174,6 @@ func (s *tempSensorServer) RecordTemps(stream pb.TempSensor_RecordTempsServer) e
 			log.Fatal(err)
 		}
 
-		fmt.Println(reading)
 	}
 }
 
