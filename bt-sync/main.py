@@ -1,6 +1,7 @@
 from bluepy import btle
 from datetime import datetime
 from queue import Queue
+import os
 from collections import namedtuple
 import grpc
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -68,7 +69,7 @@ def retrieve_notifications():
     address = None
     scanner = btle.Scanner()
     while address is None:
-        scan_time = 10
+        scan_time = 1
         print('scanning for {} seconds...'.format(scan_time))
         for device in scanner.scan(scan_time): # scan for 10 seconds
             device_name = device.getValueText(COMPLETE_LOCAL_NAME) # get adtype for "Complete Local Name"
@@ -84,6 +85,7 @@ def retrieve_notifications():
     while True:
         while not queue.empty():
             yield queue.get()
+            queue.task_done()
         if peripheral.waitForNotifications(1): # one second timeout
             # handleNotification() was called
             continue
@@ -92,11 +94,13 @@ def retrieve_notifications():
         # Perhaps do something else here
 
 def parse_notifications(notifications):
-    for data in iterator:
-        yield pooltempsensor_pb2.Temps(
+    for data in notifications:
+        sample = pooltempsensor_pb2.Temps(
             values={format(_id, 'x'): raw for _id, raw in parse(data) if _id != 0},
             date=now(),
         )
+        print(sample)
+        yield sample
 
 if __name__ == '__main__':
     HOST = os.environ.get('GRPC_HOST') or 'localhost'
@@ -105,9 +109,20 @@ if __name__ == '__main__':
     iterator = retrieve_notifications()
     iterator = parse_notifications(iterator)
 
-    with grpc.insecure_channel('{}:{}'.format(HOST, PORT)) as channel:
+    uri = '{}:{}'.format(HOST, PORT)
+    print('establishing channel to "{}"'.format(uri))
+    with grpc.insecure_channel(uri) as channel:
         stub = pooltempsensor_pb2_grpc.TempSensorStub(channel)
-        response = stub.RecordTemps(TEST_ITERATOR)
+
+        try:
+            response = stub.RecordTemps(iterator)
+        except grpc.RpcError as e:
+            print('error!')
+            print(e.details())
+            status_code = e.code()
+            print(status_code.name)
+            print(status_code.value)
+            raise e
         
         if response is None:
             print('no response')
