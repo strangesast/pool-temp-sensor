@@ -1,4 +1,8 @@
-FROM arm32v7/python:3
+FROM arm32v7/debian
+
+RUN apt-get update && apt-get install -y \
+  python3 \
+  python3-pip
 
 RUN python3 -m pip install grpcio grpcio-tools
 
