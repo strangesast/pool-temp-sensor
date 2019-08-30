@@ -1,4 +1,4 @@
-const noble = require('@abandonware/noble');
+const noble = require('noble');
 
 const serviceUuid = '0000ffe0-0000-1000-8000-00805f9b34fb';
 const characteristicUuid = '0000ffe1-0000-1000-8000-00805f9b34fb';
@@ -35,11 +35,3 @@ noble.on('discover', peripheral => {
     });
   });
 });
-
-const express = require('express');
-const app = express();
-const port = 3000;
-
-app.get('/', (req, res) => res.sendFile('index.html'));
-
-app.listen(port, () => console.log(`Listening on port ${port}!`));

@@ -1,0 +1,6 @@
+*
+!.gitignore
+!build.sh
+!Dockerfile
+!package.json
+!pooltempsensor.proto

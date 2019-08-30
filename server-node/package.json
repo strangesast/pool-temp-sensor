@@ -10,7 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@abandonware/noble": "^1.9.2-2",
-    "express": "^4.17.1"
+    "noble": "^1.9.1"
   }
 }
