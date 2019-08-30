@@ -18,8 +18,6 @@ WORKDIR /usr/src/proto
 
 COPY proto/ ./
 
-RUN npm install
-
 RUN protoc ./pooltempsensor.proto \
   --js_out=import_style=commonjs:. \
   --grpc-web_out=import_style=commonjs,mode=grpcwebtext:. \

@@ -23,13 +23,21 @@ def convert(v):
     """from DallasTemperature: C = RAW/128, F = (C*1.8)+32"""
     return v * 0.0140625 + 32;
 
+
 def parse(data):
-    """data is 20 bytes split into two readings.  first 6 bytes of each 10 byte group represent OneWire address of temp sensor. bytes 7, 8 are the measured value (16 bit).  remaining bytes are unused"""
+    """
+    data is 20 bytes split into two 10 byte readings.  the first 6 bytes of each
+    10 byte group represent OneWire address of temp sensor. bytes 7, 8 are the
+    measured value (16 bit).  remaining bytes are unused
+    """
     for i in range(0, 20, 10):
         yield int.from_bytes(data[i:i+6], 'big'), int.from_bytes(data[i+6:i+8], 'big')
 
 
 class Delegate(btle.DefaultDelegate):
+    """
+    bluepy class for handling ble notifications / scan events
+    """
     def __init__(self, cb):
         btle.DefaultDelegate.__init__(self)
         self.cb = cb;
@@ -83,6 +91,7 @@ def retrieve_notifications():
     peripheral = btle.Peripheral(address).withDelegate(Delegate(lambda val: queue.put(val)))
     
     while True:
+        # empty queue (filled during waitForNotifications)
         while not queue.empty():
             yield queue.get()
             queue.task_done()
@@ -99,8 +108,8 @@ def parse_notifications(notifications):
             values={format(_id, 'x'): raw for _id, raw in parse(data) if _id != 0},
             date=now(),
         )
-        print(sample)
         yield sample
+
 
 if __name__ == '__main__':
     HOST = os.environ.get('GRPC_HOST') or 'localhost'
@@ -117,11 +126,8 @@ if __name__ == '__main__':
         try:
             response = stub.RecordTemps(iterator)
         except grpc.RpcError as e:
-            print('error!')
+            print('grcp error!')
             print(e.details())
-            status_code = e.code()
-            print(status_code.name)
-            print(status_code.value)
             raise e
         
         if response is None:
