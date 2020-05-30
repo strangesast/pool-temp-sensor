@@ -1,0 +1,41 @@
+version: '3.7'
+services:
+  monitor:
+    build:
+      context: .
+      dockerfile: docker/monitor/Dockerfile
+    restart: always
+    environment:
+      - PG_HOST=postgres
+      - PG_DB_NAME=temps
+      - PG_USER=postgres
+      - PG_PASSWORD=password
+      - PORT=3000
+    ports:
+      - "3000:3000"
+  client:
+    build:
+      context: .
+      dockerfile: docker/client/Dockerfile
+    restart: always
+    ports:
+      - "8080:80"
+  server:
+    build:
+      context: .
+      dockerfile: docker/server/Dockerfile
+    restart: always
+    environment:
+      NODE_CONFIG: '{"postgres":{"host": "postgres", "user": "postgres", "password": "password"}, "port": 80}'
+  postgres:
+    image: postgres
+    restart: always
+    volumes:
+      - ./sql/:/docker-entrypoint-initdb.d/
+      - db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=temps
+volumes:
+  db_data:
