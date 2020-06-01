@@ -19,6 +19,15 @@ export class ScrollingGraphComponent implements OnInit, AfterViewInit, OnChanges
   @ViewChild('svg')
   svg: ElementRef;
 
+  xScale = d3.scaleTime();
+  yScale = d3.scaleLinear();
+
+  @Input()
+  from: Date;
+
+  @Input()
+  to: Date;
+
   constructor() { }
 
   currentData = {} as any;
@@ -38,7 +47,7 @@ export class ScrollingGraphComponent implements OnInit, AfterViewInit, OnChanges
           if (!acc[key]) {
             acc[key] = [];
           }
-          acc[key] = [...acc[key], [record.date, record.value]];
+          acc[key] = [...acc[key], [record.date, record.value]].filter(v => v[0] > this.xScale.domain()[0]);
         }
         return acc;
       }, []),
@@ -68,26 +77,25 @@ export class ScrollingGraphComponent implements OnInit, AfterViewInit, OnChanges
     const width = outerWidth - margin.left - margin.right;
     const height = outerHeight - margin.top - margin.bottom;
 
-    const x = d3.scaleTime().range([0, width]);
-
-    const y = d3.scaleLinear()
-        .domain([58, 64])
-        .range([height, 0]);
+    this.xScale.range([0, width]);
+    this.yScale.range([height, 0]).domain([58, 64]);
 
     const line = d3.line()
-        .x(d => x(d[0]))
-        .y(d => y(d[1]));
+        .x(d => this.xScale(d[0]))
+        .y(d => this.yScale(d[1]));
 
-    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
-
-    g.append('defs').append('clipPath')
-      .attr('id', 'clip')
-    .append('rect')
-      .attr('width', width)
-      .attr('height', height);
-
-    const sel = g.append('g')
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`).call(s =>
+      s.append('defs').append('clipPath')
+        .attr('id', 'clip')
+      .append('rect')
+        .attr('width', width)
+        .attr('height', height))
       .attr('clip-path', 'url(#clip)');
+
+    const interval = 2000;
+
+    const sel = g.append('g');
+
 
     // .append('path')
     //   .datum(this.currentData)
@@ -103,21 +111,50 @@ export class ScrollingGraphComponent implements OnInit, AfterViewInit, OnChanges
     // const interp = d3.curveStep();
 
     const component = this;
+
+    let now = new Date();
+    const calc = () => this.xScale(now) - this.xScale(d3.timeMillisecond.offset(now, interval));
+
+    sel.attr('transform', null)
+      .transition()
+      .duration(interval)
+      .ease(d3.easeLinear)
+      .on('start', tick);
+
     function tick() {
-      const now = new Date();
+      now = new Date();
       const domain = [d3.timeMinute.offset(now, -1), now];
-      x.domain(domain);
+      component.xScale.domain(domain);
 
       const [ymin, ymax] = (d3.extent(Object.values(component.currentData)
-        .reduce((a: any[], b: any[]) => a.concat(b)) as any, (v: any) => v[1]) as any[]);
-      y.domain([ymin - 1, ymax + 1]);
+        .reduce((a: any[], b: any[]) => a.concat(b), []) as any, (v: any) => v[1]) as any[]);
 
-      sel.selectAll('path').data(Object.entries(component.currentData), d => d[0]).join(
-        enter => enter.append('path').attr('stroke', 'black').attr('stroke-width', '1px').attr('fill', 'none')
-      ).datum(d => {
-        const datum = d[1];
-        return datum;
-      }).attr('d', line);
+      component.yScale.domain([ymin - 1, ymax + 1]);
+
+      const dx = calc();
+
+      sel.selectAll('path')
+        .data(Object.entries(component.currentData), d => d[0])
+        .join(enter => enter.append('path')
+          .attr('stroke', 'black')
+          .attr('stroke-width', '1px')
+          .attr('fill', 'none')
+        )
+        .datum(d => {
+          let datum = d[1] as any[];
+          if (datum.length > 0) {
+            datum = [...datum, [component.xScale.invert(width - dx), datum[datum.length - 1][1]]];
+          }
+          return datum;
+        })
+        .attr('d', line);
+
+
+
+      sel.attr('transform', null);
+
+      d3.active(this).attr('transform', `translate(${dx},0)`).transition().on('start', tick);
+
       // const data = [...component.currentData]ne;
       // if (data.length > 0) {
       //   data.push({...component.currentData[component.currentData.length - 1], date: now});
@@ -125,7 +162,7 @@ export class ScrollingGraphComponent implements OnInit, AfterViewInit, OnChanges
 
     }
 
-    setInterval(tick, 500);
+    // setInterval(tick, interval);
   }
 
 }
