@@ -1,5 +1,7 @@
 :host {
   display: block;
+  height: 220px;
+  overflow: hidden;
 }
 :host > div {
   height: 400px;

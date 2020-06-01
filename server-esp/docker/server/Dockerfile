@@ -5,4 +5,4 @@ copy server/package*.json ./
 run npm install
 copy server/ .
 
-cmd ["node", "server.js"]
+cmd ["node", "--unhandled-rejections=strict", "server.js"]

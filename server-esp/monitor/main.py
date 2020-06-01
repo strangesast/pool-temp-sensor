@@ -2,26 +2,54 @@ import os
 import asyncio
 import asyncpg
 import logging
-from contextvars import ContextVar
 from datetime import datetime
 from asyncpg.exceptions import CannotConnectNowError
 
-db = ContextVar('db')
 
-async def on_connect(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-    conn = db.get()
+async def worker(pool: asyncpg.pool.Pool, queue: asyncio.Queue):
+    ''' retrieve a few records from queue, attempt to store them in postgres db
+    '''
+    records = []
+    while True:
+        record = await queue.get()
+        records.append(record)
+        while True:
+            try:
+                records.append(queue.get_nowait())
+            except asyncio.QueueEmpty:
+                break
+        async with pool.acquire() as connection:
+            async with connection.transaction():
+                sample = None
+                for addr, value, d in records:
+                    expr = sample or 'nextval(\'sample_sequence\')'
+                    q = f'INSERT INTO raw (sample, addr, value, date) VALUES ({expr}, $1, $2, $3) RETURNING sample'
+                    result = await connection.fetch(q, addr, value, d)
+                    queue.task_done()
+                    sample = result[0].get('sample')
+            records.clear()
+
+
+async def on_connect(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, queue: asyncio.Queue):
     sample = None
-    async for buf in reader:
-        d = datetime.now()
+    async for buf in read_reader(reader):
+        d = datetime.utcnow()
         try:
-            i, addr, v = [int(s.strip()) for s in buf.decode().strip().split(',')]
+            i = buf[1]
+            addr = buf[2:10].hex()
+            value = int.from_bytes(buf[10:12], byteorder='little', signed=True)
         except:
-            continue
+            pass
+        queue.put_nowait((addr, value, d))
 
-        expr = sample or 'nextval(\'sample_sequence\')'
-        q = f'INSERT INTO raw (sample, id, addr, value, date) VALUES ({expr}, $1, $2, $3, $4) RETURNING sample'
-        result = await conn.fetch(q, i, addr, v, d)
-        sample = result[0].get('sample')
+
+async def read_reader(reader: asyncio.StreamReader):
+    while True:
+        try:
+            buf = await reader.readexactly(12);
+            yield buf
+        except asyncio.exceptions.IncompleteReadError:
+            return
 
 
 def to_f(raw):
@@ -35,14 +63,19 @@ def handle_exception(loop, context):
     asyncio.create_task(shutdown(loop))
 
 
-async def shutdown(loop, signal=None):
+def shutdown(loop, signal=None):
     """Cleanup tasks tied to the service's shutdown."""
     if signal:
         logging.info(f'Received exit signal {signal.name}...')
     logging.info('Closing database connections')
 
-    conn = db.get()
-    await conn.close()
+    #await conn.close()
+    loop.stop()
+
+    pending = asyncio.all_tasks()
+    loop.run_until_complete(asyncio.gather(*pending))
+
+    logging.info('Shutdown complete.')
 
 
 async def main():
@@ -53,28 +86,28 @@ async def main():
         'host':     os.environ.get('PG_HOST',     'localhost'),
         'port':     os.environ.get('PG_PORT',     '5432'),
     }
-
-    conn = None
-    error = None
     logging.info(f'Using db config {config}...')
+
+    error = None
     for _ in range(4):
-        try:
-            conn = await asyncpg.connect(**config)
-            break
-        except CannotConnectNowError as e:
+        if error:
             logging.info('retrying in 4s...')
-            error = e
             await asyncio.sleep(4)
+        try:
+            pool = await asyncpg.create_pool(**config)
+            break
+        except Exception as e:
+            error = e
     else:
         raise error
 
-    db.set(conn);
+    queue = asyncio.Queue(0)
 
-    asyncio.get_event_loop().set_exception_handler(handle_exception)
+    #asyncio.get_event_loop().set_exception_handler(handle_exception)
 
     port = os.environ.get('PORT', '3000')
-    server = await asyncio.start_server(on_connect, port=port)
-    await server.serve_forever()
+    server = await asyncio.start_server(lambda r, w: on_connect(r, w, queue), port=port)
+    await asyncio.gather(server.serve_forever(), worker(pool, queue))
 
 
 if __name__ == '__main__':

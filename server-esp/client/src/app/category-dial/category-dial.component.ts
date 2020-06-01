@@ -17,7 +17,7 @@ export class CategoryDialComponent implements OnInit {
     const diff = this.b - this.a;
     const a = Math.max(-1, diff);
     const b = Math.min(a - -1, 4) / 4;
-    const c = (b - 0.5) * 96;
+    const c = (b - 0.5) * 48 * 3;
     return c + 'deg';
   }
 

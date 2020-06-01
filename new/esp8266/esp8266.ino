@@ -94,18 +94,29 @@ void getMeasurements(WiFiClient client) {
   Serial.print("device count: ");
   Serial.println(deviceCount);
   setLEDs(true, deviceCount > 0);
-  uint8_t deviceAddress;
+  uint8_t deviceAddress[8];
   int16_t temp;
 
   for (uint8_t i = 0; i < deviceCount; i++) {
-    bool gotAddress = sensors.getAddress(&deviceAddress, i);
+    bool gotAddress = sensors.getAddress(deviceAddress, i);
     if (gotAddress) {
-      temp = sensors.getTemp(&deviceAddress);
-      client.print(i);
-      client.print(",");
-      client.print(deviceAddress);
-      client.print(",");
-      client.println(temp);
+      client.write(byte(atoi("t")));
+      client.write((byte) i);
+      //client.print(i);
+      //client.print(",");
+
+      for (int j = 0; j < 8; j++) {
+        client.write((byte) deviceAddress[j]);
+        //client.print((char) deviceAddress[j]);
+      }
+      //client.print(deviceAddress);
+      //client.print(",");
+                 
+      temp = sensors.getTemp(deviceAddress);
+      client.write((byte) temp);
+      client.write((byte) (temp >> 8)); 
+      //client.println(temp);
+
     }
   }
 }

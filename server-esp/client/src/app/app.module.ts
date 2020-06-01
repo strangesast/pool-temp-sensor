@@ -6,11 +6,13 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { CategoryDialComponent } from './category-dial/category-dial.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { ScrollingGraphComponent } from './scrolling-graph/scrolling-graph.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    CategoryDialComponent
+    CategoryDialComponent,
+    ScrollingGraphComponent
   ],
   imports: [
     BrowserModule,

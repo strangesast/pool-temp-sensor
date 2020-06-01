@@ -18,11 +18,10 @@ const dbConfig = {
   port: config.get('postgres.port'),
 };
 
-app.locals.db = new Pool(dbConfig);
+const pool = new Pool(dbConfig);
 
 app.get('/api/latest', async (req, res)  => {
-  const client = await req.app.locals.db.connect();
-  const result = await client.query('select distinct on (id) id, date, addr, value from raw order by id, date desc');
+  const result = await pool.query('select distinct on (addr) date, addr, value, sample from raw order by addr, date desc');
   res.json(result.rows);
 });
 
@@ -48,17 +47,14 @@ wss.on('connection', async (ws, request) => {
 });
 
 async function start() {
-  console.log('start');
-  // client = await (new Client(dbConfig)).connect();
-  client = await app.locals.db.connect();
+  client = new Client(dbConfig);
+  await client.connect();
   client.on('notification', listener);
   client.query('LISTEN new');
 }
 
 function stop() {
-  console.log('stop');
   client.off('notification', listener);
-  client.release();
   client = null;
 }
 
@@ -72,7 +68,6 @@ function listener(event) {
 
 wss.on('close', () => {
   console.log('wss closed');
-  client.release();
 });
 
 const port = config.get('port');
