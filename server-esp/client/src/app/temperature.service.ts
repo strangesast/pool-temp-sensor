@@ -26,25 +26,15 @@ function convertValue(rawValue) {
   providedIn: 'root'
 })
 export class TemperatureService {
-
-  constructor(public http: HttpClient) {}
   socket$ = webSocket<Value>(`ws://${location.origin.slice(location.protocol.length)}/ws`);
-
   stream$ = this.http.get<Value[]>('/api/latest').pipe(
     exhaustMap(latest =>
       concat(from(latest), this.socket$)),
     map(convertValue),
     share(),
   );
+  asof$ = this.stream$.pipe(pluck('date'));
+  value$ = this.stream$.pipe(scan((acc, value) => ({...acc, [value.addr]: value}), {}));
 
-  asof$ = this.stream$.pipe(
-    tap(value => console.log('value', value)),
-    pluck('date'),
-    // scan((last, next) => last == null ? next : next == null ? last : (next > last ? next : last), null),
-    // publishBehavior(null),
-  );
-
-  value$ = this.stream$.pipe(
-    scan((acc, value) => ({...acc, [value.addr]: value}), {}),
-  );
+  constructor(public http: HttpClient) {}
 }

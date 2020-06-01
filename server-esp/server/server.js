@@ -37,7 +37,12 @@ wss.on('connection', async (ws, request) => {
   if (client == null) {
     await start();
   } 
-
+  /*
+  const result = await pool.query('select distinct on (addr) date, addr, value, sample from raw order by addr, date desc');
+  for (const record of result.rows) {
+    ws.send(JSON.stringify(record));
+  }
+  */
   ws.on('close', () => {
     connectionCount--;
     if (connectionCount == 0) {

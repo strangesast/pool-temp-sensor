@@ -22,9 +22,10 @@ import { TemperatureService } from './temperature.service';
     <div class="asof">
       <span>As of: {{ (asof$ | async | date:'medium') || 'null' }}</span>
     </div>
-    <app-scrolling-graph></app-scrolling-graph>
-    <pre *ngFor="let h of history$ | async">{{ h | json }}</pre>
   </ng-container>
+  <app-scrolling-graph [data]="value$"></app-scrolling-graph>
+  <!--<pre *ngFor="let h of history$ | async">{{ h | json }}</pre>-->
+
   `,
   styleUrls: ['./app.component.scss']
 })
