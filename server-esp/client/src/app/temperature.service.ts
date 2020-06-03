@@ -11,11 +11,11 @@ interface Value {
   date: string;
 }
 
-function convertRaw(raw: number) {
+export function convertRaw(raw: number) {
   return raw * 0.0140625 + 32;
 }
 
-function convertValue(rawValue) {
+export function convertValue(rawValue) {
   const {addr, sample, date, value} = rawValue;
   // yuck
   return {addr, sample, date: new Date(date + (date.endsWith('Z') ? '' : 'Z')), value: convertRaw(value)};

@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { scan, tap, map } from 'rxjs/operators';
+import * as d3 from 'd3';
 
 import { TemperatureService } from './temperature.service';
 
@@ -11,23 +12,16 @@ import { TemperatureService } from './temperature.service';
     <div>
       <div class="grid">
         <span>IN</span>
-        <span>{{value[1]?.toFixed(3)}}</span>
-        <span>OUT</span>
         <span>{{value[0]?.toFixed(3)}}</span>
+        <span>OUT</span>
+        <span>{{value[1]?.toFixed(3)}}</span>
         <span>DIFF</span>
-        <span>{{(value[0] - value[1]).toFixed(3)}}</span>
+        <span>{{(value[1] - value[0]).toFixed(3)}}</span>
       </div>
     </div>
-    <app-category-dial [a]="value[1]" [b]="value[0]"></app-category-dial>
+    <app-category-dial [a]="value[0]" [b]="value[1]"></app-category-dial>
     <div class="asof">
       <span>As of: {{ (asof$ | async | date:'medium') || 'null' }}</span>
-    </div>
-    <div>
-      <mat-button-toggle-group name="range" aria-label="Date Range">
-        <mat-button-toggle value="minute">Minute</mat-button-toggle>
-        <mat-button-toggle value="hour">Hour</mat-button-toggle>
-        <mat-button-toggle value="day">Day</mat-button-toggle>
-      </mat-button-toggle-group>
     </div>
     <app-scrolling-graph [data]="value$"></app-scrolling-graph>
   </ng-container>
@@ -37,6 +31,8 @@ import { TemperatureService } from './temperature.service';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
+  mode = 'minute';
+
   value$ = this.service.value$;
   asof$ = this.service.asof$;
 
