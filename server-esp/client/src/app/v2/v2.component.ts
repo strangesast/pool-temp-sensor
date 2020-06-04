@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { ReplaySubject, Subject } from 'rxjs';
 import { finalize, takeUntil, withLatestFrom, switchMap, tap, map } from 'rxjs/operators';
 import * as d3 from 'd3';
+import { group } from 'd3-array';
 import { Selection } from 'd3';
 
 enum Mode {
@@ -30,10 +31,13 @@ export class V2Component implements OnInit, OnChanges, AfterViewInit, OnDestroy 
   xScale = d3.scaleTime();
   xAxis;
   yAxis;
+
+  curve = d3.curveStep;
   line = d3.line()
     .x(d => this.xScale(d[0]))
     .y(d => this.yScale(d[1]))
-    .curve(d3.curveStep);
+    .curve(this.curve);
+
   margin = {top: 20, left: 40, bottom: 20, right: 20};
 
   @Input()
@@ -43,6 +47,11 @@ export class V2Component implements OnInit, OnChanges, AfterViewInit, OnDestroy 
 
   mode$ = new ReplaySubject<Mode>(1);
   destroyed$ = new Subject();
+
+  colors = {
+    '28790994970803ca': d3.schemeRdYlBu[3][2],
+    '282b2694970e03b7': d3.schemeRdYlBu[3][0]
+  };
 
   constructor(public http: HttpClient) {}
 
@@ -71,12 +80,8 @@ export class V2Component implements OnInit, OnChanges, AfterViewInit, OnDestroy 
         const res = Math.floor((+lt - +gt) / 60000).toString();
         const params = {res, gt: gt.toISOString()};
         return this.http.get<{[key: string]: any[]}>('/api/data', {params}).pipe(
-          tap(data => {
-            this.lastData = data;
-          }),
-          finalize(() => {
-            this.loading = false;
-          }),
+          tap(data => { this.lastData = data; }),
+          finalize(() => { this.loading = false; }),
         );
       }),
     );
@@ -114,6 +119,20 @@ export class V2Component implements OnInit, OnChanges, AfterViewInit, OnDestroy 
     this.svg.append('g').attr('class', 'y-axis');
     this.svg.append('g').attr('class', 'data');
 
+    this.svg.append('clipPath').attr('id', 'clip-above').call(s => s.append('path'));
+    this.svg.append('clipPath').attr('id', 'clip-below').call(s => s.append('path'));
+    this.svg.append('path').attr('id', 'path-above').attr('opacity', 0.5).attr('fill', this.colors['282b2694970e03b7']).attr('clip-path', 'url(#clip-above)');
+    this.svg.append('path').attr('id', 'path-below').attr('opacity', 0.5).attr('fill', this.colors['28790994970803ca']).attr('clip-path', 'url(#clip-below)');
+
+    this.svg.append('path')
+      .attr('fill', 'none')
+      .attr('stroke', 'black')
+      .attr('stroke-width', 1.5)
+      .attr('stroke-linejoin', 'round')
+      .attr('stroke-linecap', 'round')
+      .attr('id', 'path');
+
+
     this.xScale.range([left, width - right]);
     this.yScale.range([height - bottom, top]);
   }
@@ -126,9 +145,61 @@ export class V2Component implements OnInit, OnChanges, AfterViewInit, OnDestroy 
   draw(data: {[key: string]: {avg: number, interval: string, addr: string}[]}) {
     this.svg.select('.x-axis').call(this.xAxis);
     this.svg.select('.y-axis').call(this.yAxis);
-    this.svg.select('.data').selectAll('path').data(Object.entries(data), d => d[0]).join(
+
+
+    const arr: any = Array.from(d3.group(
+      Object.values(data)
+        .reduce((a, b) => a.concat(b))
+        .map(d => ({...d, interval: Date.parse(d.interval)})),
+      d => d.interval,
+    ))
+      .sort((a: any, b: any) => a.key < b.key ? -1 : 1)
+      .map(([date, a]) => ({date, value0: a[0].avg, value1: a[1].avg}));
+
+    console.log(arr);
+
+    const s1 = this.svg.datum(data);
+
+    const {width, height} = this.el.nativeElement.getBoundingClientRect();
+
+    const s0 = this.svg.datum(arr);
+
+    s0.select('#clip-above').select('path').attr('d', d3.area()
+      .curve(this.curve)
+      .x((d: any) => this.xScale(d.date))
+      .y0(0)
+      .y1((d: any) => this.yScale(d.value1))
+    );
+
+    s0.select('#clip-below').select('path').attr('d', d3.area()
+      .curve(this.curve)
+      .x((d: any) => this.xScale(d.date))
+      .y0(height)
+      .y1((d: any) => this.yScale(d.value1))
+    );
+
+    s0.select('#path-above').attr('d', d3.area()
+      .curve(this.curve)
+      .x((d: any) => this.xScale(d.date))
+      .y0(height)
+      .y1((d: any) => this.yScale(d.value0))
+    );
+
+    s0.select('#path-below').attr('d', d3.area()
+      .curve(this.curve)
+      .x((d: any) => this.xScale(d.date))
+      .y0(0)
+      .y1((d: any) => this.yScale(d.value0))
+    );
+
+    s0.select('#path').attr('d', d3.line().curve(this.curve)
+      .x((d: any) => this.xScale(d.date))
+      .y((d: any) => this.yScale(d.value0))
+    );
+
+    this.svg.datum(data).select('.data').selectAll('path').data(d => Object.entries(d), d => d[0]).join(
       enter => enter.append('path')
-        .attr('stroke', 'black')
+        .attr('stroke', d => this.colors[d[0]])
         .attr('stroke-width', '1px')
         .attr('fill', 'none')
     )
