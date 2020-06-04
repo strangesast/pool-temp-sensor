@@ -29,17 +29,37 @@ app.get('/api/latest', async (req, res)  => {
 // const result = await pool.query(`select array_agg(t) as result from generate_series($1::timestamp, $2::timestamp, '1 minutes') t`, [date, now]);
 app.get('/api/data', async (req, res, next) => {
   try {
-    const from = req.query && req.query.from;
-
-    const minutes = tryParseNumber(req.query.minutes);
-    const hours = tryParseNumber(req.query.hours);
-    const seconds = tryParseNumber(req.query.seconds);
-    const milliseconds = tryParseNumber(req.query.milliseconds);
-
-    const minDate = new Date(from).toISOString();
-    const result = await pool.query('select * from raw where date > $1 order by date asc', [minDate]);
-
-    res.json(bucket(result.rows, {hours, minutes, seconds, milliseconds}));
+    // where addr = "28790994970803ca" or addr = "282b2694970e03b7"
+    let date;
+    if (req.query.gt != null) {
+      date = new Date(req.query.gt);
+      date = !isNaN(date.getTime()) ? date : null;
+    }
+    if (!date) {
+      date = new Date();
+      date.setHours(date.getHours() - 1);
+    }
+    let resolution;
+    if (req.query.res != null) {
+      resolution = parseInt(req.query.res, 10);
+      resolution = !isNaN(resolution) ? resolution : null;
+    }
+    if (!resolution) {
+      resolution = 60;
+    }
+    const result = await pool.query(`
+      select avg(value)::float, addr, to_timestamp(floor(extract(epoch from date) / $1) * $1) at time zone 'utc' as interval
+        from values
+        where (addr = '28790994970803ca' or addr = '282b2694970e03b7') and date > $2
+        group by addr, interval
+        order by interval
+    `, [resolution, date]);
+    const rows = result.rows.reduce((acc, value) => {
+      if (!acc[value.addr]) acc[value.addr] = [];
+      acc[value.addr].push(value);
+      return acc;
+    }, {});
+    res.json(rows);
   } catch (err) {
     next(err);
   }

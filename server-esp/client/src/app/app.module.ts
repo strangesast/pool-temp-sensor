@@ -8,12 +8,14 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { CategoryDialComponent } from './category-dial/category-dial.component';
 import { ScrollingGraphComponent } from './scrolling-graph/scrolling-graph.component';
+import { V2Component } from './v2/v2.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     CategoryDialComponent,
-    ScrollingGraphComponent
+    ScrollingGraphComponent,
+    V2Component
   ],
   imports: [
     BrowserModule,

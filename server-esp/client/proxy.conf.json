@@ -1,7 +1,7 @@
 [
   {
     "context": ["/api", "/ws"],
-    "target": "http://localhost:8084",
+    "target": "http://localhost:8082",
     "secure": false,
     "ws": true
   }

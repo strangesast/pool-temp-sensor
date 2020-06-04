@@ -23,7 +23,12 @@ import { TemperatureService } from './temperature.service';
     <div class="asof">
       <span>As of: {{ (asof$ | async | date:'medium') || 'null' }}</span>
     </div>
-    <app-scrolling-graph [data]="value$"></app-scrolling-graph>
+    <mat-button-toggle-group [value]="mode" (change)="mode = $event.value" name="mode" aria-label="Graph Mode">
+      <mat-button-toggle value="minute">Minute</mat-button-toggle>
+      <mat-button-toggle value="hour">Hour</mat-button-toggle>
+      <mat-button-toggle value="day">Day</mat-button-toggle>
+    </mat-button-toggle-group>
+    <app-v2 [mode]="mode"></app-v2>
   </ng-container>
   <!--<pre *ngFor="let h of history$ | async">{{ h | json }}</pre>-->
 
