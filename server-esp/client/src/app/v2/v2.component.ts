@@ -147,9 +147,9 @@ export class V2Component implements OnInit, OnChanges, AfterViewInit, OnDestroy 
     this.svg.select('.y-axis').call(this.yAxis);
 
 
-    const arr: any = Array.from(d3.group(
+    const arr: any = Array.from(group(
       Object.values(data)
-        .reduce((a, b) => a.concat(b))
+        .reduce((a, b) => a.concat(b), [])
         .map(d => ({...d, interval: Date.parse(d.interval)})),
       d => d.interval,
     ))
